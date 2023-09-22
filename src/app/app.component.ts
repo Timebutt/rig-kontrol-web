@@ -43,12 +43,9 @@ export class AppComponent {
                 this.midiOutputDevice = midiOutputDevices[1];
                 this.outputDeviceControl.setValue(this.midiOutputDevice);
 
-                console.log(midiOutputDevices);
-
                 for (const device of midiOutputDevices) {
                     if (device.name === 'Swissonic MidiConnect 2 Port 1') {
                         this.noteMidiOutputDevice = device;
-                        console.log(device);
                     }
                 }
             }
@@ -158,11 +155,7 @@ export class AppComponent {
     }
 
     stopTune() {
-        console.log(this.noteMidiOutputDevice);
-
         if (this.noteMidiOutputDevice) {
-            console.log('jo');
-
             this.noteMidiOutputDevice.send([144 + 4, 11, 127]);
             this.noteMidiOutputDevice.send([144 + 11, 10, 0]);
         }
