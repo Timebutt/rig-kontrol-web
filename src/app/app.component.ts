@@ -72,34 +72,38 @@ export class AppComponent {
         await device.claimInterface(0);
 
         while (true) {
-            const result = await device.transferIn(1, 128);
+            try {
+                const result = await device.transferIn(1, 128);
 
-            if (result.data && this.midiOutputDevice && this.midiChannelControl.value) {
-                if (result.data.byteLength === 8) {
-                    const buttonBits = result.data.getInt8(1);
+                if (result.data && this.midiOutputDevice && this.midiChannelControl.value) {
+                    if (result.data.byteLength === 8) {
+                        const buttonBits = result.data.getInt8(1);
 
-                    // Update switch values
-                    for (let i = 0; i < 8; i++) {
-                        if (this.isBitEnabled(this.lastButtonBits, i) !== this.isBitEnabled(buttonBits, i)) {
-                            if (Boolean(buttonBits >> i)) {
-                                this.midiOutputDevice.send([144 + this.midiChannelControl.value - 1, i, 127]);
-                            } else {
-                                this.midiOutputDevice.send([144 + this.midiChannelControl.value - 1, i, 0]);
+                        // Update switch values
+                        for (let i = 0; i < 8; i++) {
+                            if (this.isBitEnabled(this.lastButtonBits, i) !== this.isBitEnabled(buttonBits, i)) {
+                                if (Boolean(buttonBits >> i)) {
+                                    this.midiOutputDevice.send([144 + this.midiChannelControl.value - 1, i, 127]);
+                                } else {
+                                    this.midiOutputDevice.send([144 + this.midiChannelControl.value - 1, i, 0]);
+                                }
                             }
                         }
+                        this.lastButtonBits = buttonBits;
                     }
-                    this.lastButtonBits = buttonBits;
-                }
 
-                // Update expression pedal value
-                if (result.data.byteLength === 33) {
-                    const expressionPedalValue = result.data.getInt16(5);
-                    const mappedExpressionPedalValue = this.convertExpressionPedalValue(expressionPedalValue);
-                    if (mappedExpressionPedalValue !== this.lastExpressionPedalValue) {
-                        this.midiOutputDevice.send([176 + this.midiChannelControl.value - 1, 1, mappedExpressionPedalValue]);
-                        this.lastExpressionPedalValue = mappedExpressionPedalValue;
+                    // Update expression pedal value
+                    if (result.data.byteLength === 33) {
+                        const expressionPedalValue = result.data.getInt16(5);
+                        const mappedExpressionPedalValue = this.convertExpressionPedalValue(expressionPedalValue);
+                        if (mappedExpressionPedalValue !== this.lastExpressionPedalValue) {
+                            this.midiOutputDevice.send([176 + this.midiChannelControl.value - 1, 1, mappedExpressionPedalValue]);
+                            this.lastExpressionPedalValue = mappedExpressionPedalValue;
+                        }
                     }
                 }
+            } catch (error) {
+                console.log(error);
             }
         }
     }
