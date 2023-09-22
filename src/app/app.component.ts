@@ -20,6 +20,20 @@ export class AppComponent {
     outputDeviceControl = new FormControl();
     midiChannelControl = new FormControl<number>(1);
 
+    noteMidiOutputDevice: WebMidi.MIDIOutput | null = null;
+
+    midiNoteMap: Record<number, number> = {
+        0: 0,
+        1: 1,
+        2: 2,
+        3: 3,
+        4: 55,
+        5: 51,
+        6: 6,
+        7: 7,
+        8: 8,
+    };
+
     constructor() {
         navigator.requestMIDIAccess().then((access) => {
             const midiOutputDevices = Array.from(access.outputs.values());
@@ -28,6 +42,12 @@ export class AppComponent {
                 this.midiOutputDevices = midiOutputDevices;
                 this.midiOutputDevice = midiOutputDevices[1];
                 this.outputDeviceControl.setValue(this.midiOutputDevice);
+
+                for (const device of midiOutputDevices) {
+                    if (device.name === 'Swissonic MidiConnect 2 Port 1') {
+                        this.noteMidiOutputDevice = device;
+                    }
+                }
             }
         });
     }
@@ -74,18 +94,37 @@ export class AppComponent {
         while (true) {
             try {
                 const result = await device.transferIn(1, 128);
-
                 if (result.data && this.midiOutputDevice && this.midiChannelControl.value) {
                     if (result.data.byteLength === 8) {
                         const buttonBits = result.data.getInt8(1);
 
+                        console.log('DATA BINNEN');
+
                         // Update switch values
                         for (let i = 0; i < 8; i++) {
                             if (this.isBitEnabled(this.lastButtonBits, i) !== this.isBitEnabled(buttonBits, i)) {
-                                if (Boolean(buttonBits >> i)) {
-                                    this.midiOutputDevice.send([144 + this.midiChannelControl.value - 1, i, 127]);
-                                } else {
-                                    this.midiOutputDevice.send([144 + this.midiChannelControl.value - 1, i, 0]);
+                                const outValue = Boolean(buttonBits >> i) ? 127 : 0;
+
+                                switch (i) {
+                                    case 0:
+                                        this.midiOutputDevice.send([144 + 2, 54, outValue]);
+                                        break;
+                                    case 1:
+                                        this.midiOutputDevice.send([144 + 2, 50, outValue]);
+                                        break;
+                                    case 2:
+                                        this.midiOutputDevice.send([144 + 2, 56, outValue]);
+                                        break;
+                                    case 3:
+                                        this.midiOutputDevice.send([144 + 2, 57, outValue]);
+                                        break;
+                                    case 4:
+                                        this.midiOutputDevice.send([144 + 2, 55, outValue]);
+                                        break;
+                                    case 5:
+                                        this.midiOutputDevice.send([144 + 2, 51, outValue]);
+                                        this.midiOutputDevice.send([144 + 15, 1, outValue]);
+                                        break;
                                 }
                             }
                         }
@@ -105,6 +144,20 @@ export class AppComponent {
             } catch (error) {
                 console.log(error);
             }
+        }
+    }
+
+    startTune(tune: number) {
+        if (this.noteMidiOutputDevice) {
+            this.noteMidiOutputDevice.send([144 + 4, tune, 127]);
+            this.noteMidiOutputDevice.send([144 + 4, tune, 0]);
+        }
+    }
+
+    stopTune() {
+        if (this.noteMidiOutputDevice) {
+            this.noteMidiOutputDevice.send([144 + 4, 11, 127]);
+            this.noteMidiOutputDevice.send([144 + 11, 10, 0]);
         }
     }
 }
