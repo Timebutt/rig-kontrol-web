@@ -11,8 +11,8 @@ export class AppComponent {
     readonly expressionPedalMinValue = 70;
     readonly expressionPedalMaxValue = 600;
 
-    lastButtonBits: number = 0;
-    lastExpressionPedalValue: number = 0;
+    lastButtonBits = 0;
+    lastExpressionPedalValue = 0;
 
     midiOutputDevices: WebMidi.MIDIOutput[] = [];
     midiOutputDevice: WebMidi.MIDIOutput | null = null;
@@ -82,7 +82,7 @@ export class AppComponent {
                         // Update switch values
                         for (let i = 0; i < 8; i++) {
                             if (this.isBitEnabled(this.lastButtonBits, i) !== this.isBitEnabled(buttonBits, i)) {
-                                if (Boolean(buttonBits >> i)) {
+                                if (buttonBits >> i) {
                                     this.midiOutputDevice.send([144 + this.midiChannelControl.value - 1, i, 127]);
                                 } else {
                                     this.midiOutputDevice.send([144 + this.midiChannelControl.value - 1, i, 0]);
